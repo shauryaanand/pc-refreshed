@@ -1,10 +1,9 @@
-﻿# Created by Kugane
+# Created by Kugane, Modified by shauryaanand
 #
 
 ### Here can you add apps that you want to configure during installation ###
 # just add the app id from winget
 $graphical = @(
-    "ClamWin.ClamWin"
 );
 
 ### These apps are installed silently for all users ###
@@ -13,7 +12,6 @@ $graphical = @(
 $apps = @(
     "7zip.7zip"
     "Git.Git"
-    "Notepad++.Notepad++"
     "CoreyButler.NVMforWindows"
     "Foxit.FoxitReader"
     "Bitwarden.Bitwarden"
@@ -44,11 +42,14 @@ $apps = @(
     "Rufus.Rufus"
     "WinDirStat.WinDirStat"
     "Valve.Steam"
-    "VideoLAN.VLC"
     "CodecGuide.K-LiteCodecPack.Full"
     "Microsoft.devtunnel"
     "Microsoft.PowerToys"
     "Greenshot.Greenshot"
+    "Ultimaker.Cura"
+    "Telerik.Fiddler.Classic"
+    "Cisco.CiscoWebexMeetings"
+    "Zoom.Zoom"
     "Microsoft.VCRedist.2005.x86"
     "Microsoft.VCRedist.2005.x64"
     "Microsoft.VCRedist.2008.x64"
@@ -278,56 +279,50 @@ function install_customapps {
     Clear-Host
     Write-Host -ForegroundColor Cyan "Installing Custom Apps"
 
-    # # SpotX
-    # Write-Host -ForegroundColor Yellow  "Install: Spotify"
-    # [Net.ServicePointManager]::SecurityProtocol = 3072; Invoke-Expression "& { $(Invoke-WebRequest -useb 'https://spotx-official.github.io/run.ps1') } -confirm_uninstall_ms_spoti -confirm_spoti_recomended_over -podcasts_off -block_update_on -start_spoti -new_theme -adsections_off -lyrics_stat spotify"
+    # SpotX
+    Write-Host -ForegroundColor Yellow  "Install: Spotify"
+    [Net.ServicePointManager]::SecurityProtocol = 3072; Invoke-Expression "& { $(Invoke-WebRequest -useb 'https://spotx-official.github.io/run.ps1') } -confirm_uninstall_ms_spoti -confirm_spoti_recomended_over -podcasts_off -block_update_on -start_spoti -new_theme -adsections_off -lyrics_stat spotify"
 
-    # # PyEnv for Windows
-    # Write-Host -ForegroundColor Yellow  "Install: PyEnv for Windows"
-    # Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/pyenv-win/pyenv-win/master/pyenv-win/install-pyenv-win.ps1" -OutFile "./install-pyenv-win.ps1"; &"./install-pyenv-win.ps1"
+    # PyEnv for Windows
+    Write-Host -ForegroundColor Yellow  "Install: PyEnv for Windows"
+    Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/pyenv-win/pyenv-win/master/pyenv-win/install-pyenv-win.ps1" -OutFile "./install-pyenv-win.ps1"; &"./install-pyenv-win.ps1"
 
-    # # DBGate
-    # Write-Host -ForegroundColor Yellow  "Install: DBGate"
-    # Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/dbgate/dbgate/releases/latest/download/dbgate-latest.exe" -OutFile "./dbgate-latest.exe"; &"./dbgate-latest.exe"
+    # DBGate
+    Write-Host -ForegroundColor Yellow  "Install: DBGate"
+    Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/dbgate/dbgate/releases/latest/download/dbgate-latest.exe" -OutFile "./dbgate-latest.exe"; &"./dbgate-latest.exe"
 
-    # # dotnet
-    # [Net.ServicePointManager]::SecurityProtocol = 3072; Invoke-WebRequest -UseBasicParsing -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile "./dotnet-install.ps1"
-    # Write-Host -ForegroundColor Yellow  "Install: dotnet LTS"
-    # .\dotnet-install.ps1 -Channel LTS
-    # Write-Host -ForegroundColor Yellow  "Install: dotnet STS"
-    # .\dotnet-install.ps1 -Channel STS
+    # dotnet
+    [Net.ServicePointManager]::SecurityProtocol = 3072; Invoke-WebRequest -UseBasicParsing -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile "./dotnet-install.ps1"
+    Write-Host -ForegroundColor Yellow  "Install: dotnet LTS"
+    .\dotnet-install.ps1 -Channel LTS
+    Write-Host -ForegroundColor Yellow  "Install: dotnet STS"
+    .\dotnet-install.ps1 -Channel STS
 
     # # wsl
-    # Write-Host -ForegroundColor Yellow  "Install: WSL (Ubuntu)"
-    # wsl --install --no-launch
+    Write-Host -ForegroundColor Yellow  "Install: WSL (Ubuntu)"
+    wsl --install --no-launch
 
     # WSA
     Write-Host -ForegroundColor Yellow  "Install: WSA"
+    Invoke-WebRequest -UseBasicParsing -Uri ((Invoke-WebRequest "https://api.github.com/repos/MustardChef/WSABuilds/releases/latest" | ConvertFrom-Json)[0].assets | Where-Object name -like "*-Nightly-MindTheGapps-13.0-RemovedAmazon.7z" | Select-Object -ExpandProperty browser_download_url) -OutFile "./wsa.7z"
 
-    Invoke-WebRequest -UseBasicParsing -Uri ((Invoke-WebRequest "https://api.github.com/repos/MustardChef/WSABuilds/releases/latest" | ConvertFrom-Json)[0].assets | Where-Object name -like "*-Nightly-MindTheGapps-13.0-RemovedAmazon.7z" | Select-Object -ExpandProperty browser_download_url) -OutFile "./wsa.7zip"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Set-PSRepository -Name 'PSGallery' -SourceLocation "https://www.powershellgallery.com/api/v2" -InstallationPolicy Trusted
+    Install-Module -Name PS7Zip -Force
 
-    # TODO: Extract 7zip and run Run.bat
-   
-    # Write-Host Dowloading latest release
-    # Invoke-WebRequest $download -Out $zip
+    Expand-7Zip -ArchiveFileName ".\wsa.7z" -TargetPath '.\wsa'
 
-    # Write-Host Extracting release files
-    # Expand-Archive $zip -Force
-
-    # # Cleaning up target dir
-    # Remove-Item $name -Recurse -Force -ErrorAction SilentlyContinue 
-
-    # # Moving from temp dir to target dir
-    # Move-Item $dir\$name -Destination $name -Force
-
-    # # Removing temp files
-    # Remove-Item $zip -Force
-    # Remove-Item $dir -Recurse -Force
+    cd wsa
+    cd */
+    ./Run.bat
+    cd ../../
 
     # Clean up
     Remove-Item .\install-pyenv-win.ps1
     Remove-Item .\dbgate-latest.exe
     Remove-Item .\dotnet-install.ps1
+    Remove-Item .\wsa.7z
+    Remove-Item .\wsa -Recurse -Force
 }
 
 ### Install Apps silent ###
@@ -339,7 +334,7 @@ function install_silent {
         if (![String]::Join("", $listApp).Contains($app)) {
             Write-Host -ForegroundColor Yellow  "Install:" $app
             # MS Store apps
-            if ((winget search --exact -q $app) -match "msstore") {
+            if ((winget search --accept-source-agreements --exact -q $app) -match "msstore") {
                 winget install --exact --silent --accept-source-agreements --accept-package-agreements $app --source msstore
             }
             # All other Apps
@@ -421,7 +416,7 @@ function get_list {
     Clear-Host
     $newPath = ("$DesktopPath\applist_$env:COMPUTERNAME" + "_" + $(Get-Date -Format 'yyyy_MM_dd') + ".txt")
     Write-Host -ForegroundColor Yellow "Generating Applist..."
-    winget list > $newPath
+    winget list --accept-source-agreements > $newPath
     Write-Host -ForegroundColor Magenta "List saved in $newPath"
 }
 
@@ -437,12 +432,20 @@ function check_rights {
     If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
     {
         Write-Warning "The script needs to be executed with administrator privileges."
-        Break
+        $newProcess = New-Object System.Diagnostics.ProcessStartInfo "PowerShell";
+        $newProcess.Arguments = "& '" + $script:MyInvocation.MyCommand.Path + "'"
+        $newProcess.Verb = "runas";
+        
+        [System.Diagnostics.Process]::Start($newProcess);
+        
+        Exit
     }
 }
 
 ### Question what to do ###
 function menu {
+    Set-ExecutionPolicy Unrestricted -Scope CurrentUser -Force
+
     [string]$Title = 'Winget Menu'
     Clear-Host
     Write-Host "================ $Title ================"
@@ -466,7 +469,7 @@ function menu {
     $actions = "0"
     while ($actions -notin "0..7") {
     $actions = Read-Host -Prompt 'What you want to do?'
-        if ($actions -in 0..7) {
+        if ($actions -in 0..8) {
             if ($actions -eq 0) {
                 exit
             }
