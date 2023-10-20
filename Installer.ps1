@@ -297,7 +297,6 @@ function install_silent_apps {
                 $silent_app + " couldn't be installed." | Add-Content $errorlog
                 Write-Warning "$silent_app couldn't be installed."
                 Write-Host -ForegroundColor Yellow "Logged in $errorlog"
-                Pause
             }  
         }
         else {
@@ -308,6 +307,7 @@ function install_silent_apps {
 
 ### Install Custom Apps ###
 function install_custom_apps {
+
     Write-Host ""
     Write-Host -ForegroundColor Cyan "Installing Custom Apps ..."
 
@@ -330,23 +330,26 @@ function install_custom_apps {
     Write-Host -ForegroundColor Yellow  "Install: dotnet STS"
     .\dotnet-install.ps1 -Channel STS
 
-    # # wsl
+    # WSL
     Write-Host -ForegroundColor Yellow  "Install: WSL (Ubuntu)"
     wsl --install -d Ubuntu --no-launch
 
     # WSA
     Write-Host -ForegroundColor Yellow  "Install: WSA"
+
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+    
     Invoke-WebRequest -UseBasicParsing -Uri ((Invoke-WebRequest "https://api.github.com/repos/MustardChef/WSABuilds/releases/latest" | ConvertFrom-Json)[0].assets | Where-Object name -like "*-Nightly-MindTheGapps-13.0-RemovedAmazon.7z" | Select-Object -ExpandProperty browser_download_url) -OutFile "./wsa.7z"
 
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Set-PSRepository -Name 'PSGallery' -SourceLocation "https://www.powershellgallery.com/api/v2" -InstallationPolicy Trusted
     Install-Module -Name PS7Zip -Force
 
-    Expand-7Zip -ArchiveFileName ".\wsa.7z" -TargetPath '.\wsa'
+    Expand-7Zip -FullName .\wsa.7z -DestinationPath .\wsa
 
     cd wsa
     cd */
-    ./Run.bat
+    & .\Install.ps1
     cd ../../
 
     # Clean up
@@ -371,7 +374,6 @@ function debloat_apps {
             Write-Host "$blt not found. Skipping ..."
         }
     }
-    Pause
 }
 
 ### Finished ###
@@ -398,6 +400,7 @@ function check_rights {
 
 ### Question what to do ###
 function menu {
+    $ProgressPreference = 'SilentlyContinue'
     Set-ExecutionPolicy Unrestricted -Scope CurrentUser -Force
 
     [string]$Title = 'Winget Menu'
