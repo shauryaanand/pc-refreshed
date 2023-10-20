@@ -4,6 +4,7 @@
 #>
 
 $winget_interactive_apps = @(
+    "CoreyButler.NVMforWindows"
 );
 
 <#
@@ -15,7 +16,6 @@ $winget_interactive_apps = @(
 $winget_silent_apps = @(
     "7zip.7zip"
     "Git.Git"
-    "CoreyButler.NVMforWindows"
     "Foxit.FoxitReader"
     "Bitwarden.Bitwarden"
     "Microsoft.WindowsTerminal"
