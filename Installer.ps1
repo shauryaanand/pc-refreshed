@@ -1,15 +1,18 @@
-# Created by Kugane, Modified by shauryaanand
-#
+<#
+ # List of Apps that needs to be configured during install.
+ # Use https://winget.run or https://winstall.app to find Id for the Apps.
+#>
 
-### Here can you add apps that you want to configure during installation ###
-# just add the app id from winget
-$graphical = @(
+$winget_interactive_apps = @(
 );
 
-### These apps are installed silently for all users ###
-# for msstore apps you need to specify the source like below
+<#
+ # List of Apps that needs to be installed silently .
+ # Use https://winget.run or https://winstall.app to find Id for the Apps.
+ # Use https://apps.microsoft.com/apps to extract Id from the url for the Microsoft Store Apps.
+#>
 
-$apps = @(
+$winget_silent_apps = @(
     "7zip.7zip"
     "Git.Git"
     "CoreyButler.NVMforWindows"
@@ -34,6 +37,7 @@ $apps = @(
     "Microsoft.VisualStudio.2022.Enterprise"
     "Microsoft.WindowsTerminal"
     "Microsoft.Office"
+    "SoftDeluxe.FreeDownloadManager"
     "Twilio.Authy"
     "Bitvise.SSH.Client"
     "Postman.Postman"
@@ -74,7 +78,7 @@ $apps = @(
     "9MSMLRH6LZF3"                      # Windows Notepad
 );
 
-$bloatware = @(
+$bloatware_apps = @(
     # default Windows 11 apps
     "MicrosoftTeams"
     #"Microsoft.Todos"
@@ -211,27 +215,27 @@ $DesktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFo
 $errorlog = "$DesktopPath\winget_error.log"
 
 function install_winget {
-    Clear-Host
-    Write-Host -ForegroundColor Yellow "Checking if WinGet is installed"
+    Write-Host ""
+    Write-Host -ForegroundColor Yellow "Checking if WinGet is installed ..."
     if (!$hasPackageManager) {
             if ($hasVCLibs.Version -lt "14.0.30035.0") {
-                Write-Host -ForegroundColor Yellow "Installing VCLibs dependencies..."
+                Write-Host -ForegroundColor Yellow "Installing VCLibs dependencies ..."
                 Add-AppxPackage -Path "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx"
                 Write-Host -ForegroundColor Green "VCLibs dependencies successfully installed."
             }
             else {
-                Write-Host -ForegroundColor Green "VCLibs is already installed. Skip..."
+                Write-Host -ForegroundColor Green "VCLibs is already installed. Skipping ..."
             }
             if ($hasXAML.Version -lt "7.2203.17001.0") {
-                Write-Host -ForegroundColor Yellow "Installing XAML dependencies..."
+                Write-Host -ForegroundColor Yellow "Installing XAML dependencies ..."
                 Add-AppxPackage -Path "https://github.com/shauryaanand/pc-refreshed/raw/main/Microsoft.UI.Xaml.2.7_7.2203.17001.0_x64__8wekyb3d8bbwe.Appx"
                 Write-Host -ForegroundColor Green "XAML dependencies successfully installed."
             }
             else {
-                Write-Host -ForegroundColor Green "XAML is already installed. Skip..."
+                Write-Host -ForegroundColor Green "XAML is already installed. Skipping ..."
             }
             if ($hasAppInstaller.Version -lt "1.16.12653.0") {
-                Write-Host -ForegroundColor Yellow "Installing WinGet..."
+                Write-Host -ForegroundColor Yellow "Installing WinGet ..."
     	        $releases_url = "https://api.github.com/repos/microsoft/winget-cli/releases/latest"
     		    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls13
     		    $releases = Invoke-RestMethod -Uri "$($releases_url)"
@@ -241,43 +245,71 @@ function install_winget {
             }
     }
     else {
-        Write-Host -ForegroundColor Green "WinGet is already installed. Skip..."
-        Write-Host ""
+        Write-Host -ForegroundColor Green "WinGet is already installed. Skipping ..."
         }
-    Pause
 }
 
-### Install Apps with GUI ###
+### Install Apps Interactively ###
 # Idea from this gist: https://gist.github.com/Codebytes/29bf18015f6e93fca9421df73c6e512c
-function install_gui {
-    Clear-Host
-    Write-Host -ForegroundColor Cyan "Installing new Apps with GUI"
-    Foreach ($gui in $graphical) {
-        $listGUI = winget list --exact --accept-source-agreements -q $gui
-        if (![String]::Join("", $listGUI).Contains($gui)) {
-            Write-Host -ForegroundColor Yellow "Install:" $gui
-            winget install --exact --interactive --accept-source-agreements --accept-package-agreements $gui
+function install_interactive_apps {
+    Write-Host ""
+    Write-Host -ForegroundColor Cyan "Installing new Apps (Interactively) ..."
+    Foreach ($interactive_app in $winget_interactive_apps) {
+        $list_interactive_apps = winget list --exact --accept-source-agreements -q $interactive_app
+        if (![String]::Join("", $list_interactive_apps).Contains($interactive_app)) {
+            Write-Host -ForegroundColor Yellow "Install:" $interactive_app
+            winget install --exact --interactive --accept-source-agreements --accept-package-agreements $interactive_app
             if ($LASTEXITCODE -eq 0) {
-                Write-Host -ForegroundColor Green "$gui successfully installed."
+                Write-Host -ForegroundColor Green "$interactive_app successfully installed."
             }
             else {
-                "$gui couldn't be installed." | Add-Content $errorlog
-                Write-Warning "$gui couldn't be installed."
-                Write-Host -ForegroundColor Yellow "Write in $errorlog"
-                Pause
+                "$interactive_app couldn't be installed." | Add-Content $errorlog
+                Write-Warning "$interactive_app couldn't be installed."
+                Write-Host -ForegroundColor Yellow "Logged at $errorlog."
             }
         }
         else {
-            Write-Host -ForegroundColor Yellow "$gui already installed. Skip..."
+            Write-Host -ForegroundColor Yellow "$interactive_app already installed. Skipping ..."
         }
     }
-    Pause
+}
+
+### Install Apps silent ###
+function install_silent_apps {
+    Write-Host ""
+    Write-Host -ForegroundColor Cyan "Installing new Apps (Silently) ..."
+    Foreach ($silent_app in $winget_silent_apps) {
+        $list_silent_app = winget list --exact --accept-source-agreements -q $silent_app
+        if (![String]::Join("", $list_silent_app).Contains($silent_app)) {
+            Write-Host -ForegroundColor Yellow  "Install:" $silent_app
+            # MS Store apps
+            if ((winget search --accept-source-agreements --exact -q $silent_app) -match "msstore") {
+                winget install --exact --silent --accept-source-agreements --accept-package-agreements $silent_app --source msstore
+            }
+            # All other Apps
+            else {
+                winget install --exact --silent --verbose --disable-interactivity --accept-source-agreements --accept-package-agreements --id $silent_app
+            }
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host -ForegroundColor Green "$silent_app successfully installed."
+            }
+            else {
+                $silent_app + " couldn't be installed." | Add-Content $errorlog
+                Write-Warning "$silent_app couldn't be installed."
+                Write-Host -ForegroundColor Yellow "Logged in $errorlog"
+                Pause
+            }  
+        }
+        else {
+            Write-Host -ForegroundColor Yellow "$silent_app already installed. Skipping ..."
+        }
+    }
 }
 
 ### Install Custom Apps ###
-function install_customapps {
-    Clear-Host
-    Write-Host -ForegroundColor Cyan "Installing Custom Apps"
+function install_custom_apps {
+    Write-Host ""
+    Write-Host -ForegroundColor Cyan "Installing Custom Apps ..."
 
     # SpotX
     Write-Host -ForegroundColor Yellow  "Install: Spotify"
@@ -300,7 +332,7 @@ function install_customapps {
 
     # # wsl
     Write-Host -ForegroundColor Yellow  "Install: WSL (Ubuntu)"
-    wsl --install --no-launch
+    wsl --install -d Ubuntu --no-launch
 
     # WSA
     Write-Host -ForegroundColor Yellow  "Install: WSA"
@@ -325,105 +357,27 @@ function install_customapps {
     Remove-Item .\wsa -Recurse -Force
 }
 
-### Install Apps silent ###
-function install_silent {
-    Clear-Host
-    Write-Host -ForegroundColor Cyan "Installing new Apps"
-    Foreach ($app in $apps) {
-        $listApp = winget list --exact --accept-source-agreements -q $app
-        if (![String]::Join("", $listApp).Contains($app)) {
-            Write-Host -ForegroundColor Yellow  "Install:" $app
-            # MS Store apps
-            if ((winget search --accept-source-agreements --exact -q $app) -match "msstore") {
-                winget install --exact --silent --accept-source-agreements --accept-package-agreements $app --source msstore
-            }
-            # All other Apps
-            else {
-                winget install --exact --silent --verbose --disable-interactivity --accept-source-agreements --accept-package-agreements --id $app
-            }
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host -ForegroundColor Green "$app successfully installed."
-            }
-            else {
-                $app + " couldn't be installed." | Add-Content $errorlog
-                Write-Warning "$app couldn't be installed."
-                Write-Host -ForegroundColor Yellow "Write in $errorlog"
-                Pause
-            }  
-        }
-        else {
-            Write-Host -ForegroundColor Yellow "$app already installed. Skip..."
-        }
-    }
-    Pause
-}
-
 ### Debloating ###
 # Based on this gist: https://github.com/W4RH4WK/Debloat-Windows-10/blob/master/scripts/remove-default-apps.ps1
-function debloating {
+function debloat_apps {
     Clear-Host
-    Write-Host -ForegroundColor Cyan "Removing bloatware..."
-    Foreach ($blt in $bloatware) {
-        $package = Get-AppxPackage $blt
+    Write-Host -ForegroundColor Cyan "Removing Bloatware ..."
+    Foreach ($bloatware_app in $bloatware_apps) {
+        $package = Get-AppxPackage $bloatware_app
         if ($null -ne $package) {
-            Write-Host -ForegroundColor Red "Removing: $blt"
+            Write-Host -ForegroundColor Red "Remove: $bloatware_app"
             $package | Remove-AppxPackage
         } else {
-            Write-Host "$blt not found. Skip..."
+            Write-Host "$blt not found. Skipping ..."
         }
     }
     Pause
-}
-
-### Register Taskjob ###
-function taskjob {
-    $taskname = 'WinGet AutoUpgrade & Cleanup'
-    Write-Host -ForegroundColor Yellow "Checking for Taskjob..."
-    if ($(Get-ScheduledTask -TaskName $taskname -ErrorAction SilentlyContinue).TaskName -eq $taskname) {
-        Write-Host -ForegroundColor Yellow "Taskjob already exists. Do you want to update to newer version? (y/n)"
-        $update = Read-Host
-        if ($update -eq 'y' -or $update -eq 'Y') {
-            Unregister-ScheduledTask -TaskName $taskname -Confirm:$False -ErrorAction SilentlyContinue
-            Write-Host -ForegroundColor Yellow "Taskjob updating..."
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls13
-            Invoke-WebRequest -Uri https://github.com/shauryaanand/pc-refreshed/raw/main/WinGet%20AutoUpgrade%20%26%20Cleanup.xml -OutFile '$taskjob' 
-            Register-ScheduledTask -xml (Get-Content '$taskjob' | Out-String) -TaskName $taskname
-            Write-Host -ForegroundColor Green "Taskjob successfully updated."
-            Pause
-            Clear-Host
-        }
-        else {
-            Write-Warning "Taskjob not updated."
-            Pause
-            Clear-Host
-        }
-    }
-    else {
-        Write-Host -ForegroundColor Yellow "Installing taskjob..."
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls13
-        Invoke-WebRequest -Uri https://github.com/shauryaanand/pc-refreshed/raw/main/WinGet%20AutoUpgrade%20%26%20Cleanup.xml -OutFile '$taskjob' 
-        Register-ScheduledTask -xml (Get-Content '$taskjob' | Out-String) -TaskName $taskname
-        Write-Host -ForegroundColor Green "Taskjob successfully installed."
-        Pause
-        Clear-Host
-    }
-    Pause
-    Clear-Host
-}
-
-### Get List of installed Apps ###
-function get_list {
-    Clear-Host
-    $newPath = ("$DesktopPath\applist_$env:COMPUTERNAME" + "_" + $(Get-Date -Format 'yyyy_MM_dd') + ".txt")
-    Write-Host -ForegroundColor Yellow "Generating Applist..."
-    winget list --accept-source-agreements > $newPath
-    Write-Host -ForegroundColor Magenta "List saved in $newPath"
 }
 
 ### Finished ###
 function finish {
     Write-Host
-    Write-Host -ForegroundColor Magenta  "Installation finished"
+    Write-Host -ForegroundColor Magenta  "All actions are now completed."
     Write-Host
     Pause
 }
@@ -450,36 +404,32 @@ function menu {
     Clear-Host
     Write-Host "================ $Title ================"
     Write-Host
-    Write-Host "1: Do all steps below"
+    Write-Host "1: Debloat and Start all Installations."
     Write-Host
-    Write-Host "2: Just install winget"
+    Write-Host "2: Install winget"
     Write-Host
-    Write-Host "3: Install Apps under graphical"
-    Write-Host "4: Install Apps under apps"
-    Write-Host "5: Install Apps under custom apps"
+    Write-Host "3: Install Apps (Interactively)"
+    Write-Host "4: Install Apps (Silently)"
+    Write-Host "5: Install Custom Apps"
     Write-Host
-    Write-Host "6: Remove bloatware"
+    Write-Host "6: Debloat"
     Write-Host
-    Write-Host "7: Install Taskjob for automatic updates"
-    Write-Host "8: Get List of all installed Apps"
-    Write-Host
-    Write-Host -ForegroundColor Magenta "0: Quit"
+    Write-Host -ForegroundColor Magenta "0: Exit"
     Write-Host
  
     $actions = "0"
-    while ($actions -notin "0..7") {
+    while ($actions -notin "0..6") {
     $actions = Read-Host -Prompt 'What you want to do?'
-        if ($actions -in 0..8) {
+        if ($actions -in 0..6) {
             if ($actions -eq 0) {
                 exit
             }
             if ($actions -eq 1) {
-                debloating
+                debloat_apps
                 install_winget
-                install_gui
-                install_silent
-                install_customapps
-                taskjob
+                install_silent_apps
+                install_custom_apps
+                install_interactive_apps
                 finish
             }
             if ($actions -eq 2) {
@@ -488,29 +438,21 @@ function menu {
             }
             if ($actions -eq 3) {
                 install_winget
-                install_gui
+                install_interactive_apps
                 finish
             }
             if ($actions -eq 4) {
                 install_winget
-                install_silent
+                install_silent_apps
                 finish
             }
             if ($actions -eq 5) {
-                install_customapps
+                install_custom_apps
                 finish
             }
             if ($actions -eq 6) {
-                debloating
+                debloat_apps
                 finish
-            }
-            if ($actions -eq 7) {
-                taskjob
-                finish
-            }
-            if ($actions -eq 8) {
-                install_winget
-                get_list
             }
             menu
         }
