@@ -207,10 +207,10 @@ $bloatware_apps = @(
 
 ### Install WinGet ###
 # Idea from this gist: https://gist.github.com/crutkas/6c2096eae387e544bd05cde246f23901
-$hasPackageManager = Get-AppxPackage -Name 'Microsoft.Winget.Source' | Select Name, Version
-$hasVCLibs = Get-AppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop' | Select Name, Version
-$hasXAML = Get-AppxPackage -Name 'Microsoft.UI.Xaml.2.7*' | Select Name, Version
-$hasAppInstaller = Get-AppxPackage -Name 'Microsoft.DesktopAppInstaller' | Select Name, Version
+$hasPackageManager = Get-AppxPackage -Name 'Microsoft.Winget.Source' | Select-Object Name, Version
+$hasVCLibs = Get-AppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop' | Select-Object Name, Version
+$hasXAML = Get-AppxPackage -Name 'Microsoft.UI.Xaml.2.7*' | Select-Object Name, Version
+$hasAppInstaller = Get-AppxPackage -Name 'Microsoft.DesktopAppInstaller' | Select-Object Name, Version
 $DesktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)
 $errorlog = "$DesktopPath\winget_error.log"
 
@@ -218,35 +218,35 @@ function install_winget {
     Write-Host ""
     Write-Host -ForegroundColor Yellow "Checking if WinGet is installed ..."
     if (!$hasPackageManager) {
-            if ($hasVCLibs.Version -lt "14.0.30035.0") {
-                Write-Host -ForegroundColor Yellow "Installing VCLibs dependencies ..."
-                Add-AppxPackage -Path "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx"
-                Write-Host -ForegroundColor Green "VCLibs dependencies successfully installed."
-            }
-            else {
-                Write-Host -ForegroundColor Green "VCLibs is already installed. Skipping ..."
-            }
-            if ($hasXAML.Version -lt "7.2203.17001.0") {
-                Write-Host -ForegroundColor Yellow "Installing XAML dependencies ..."
-                Add-AppxPackage -Path "https://github.com/shauryaanand/pc-refreshed/raw/main/Microsoft.UI.Xaml.2.7_7.2203.17001.0_x64__8wekyb3d8bbwe.Appx"
-                Write-Host -ForegroundColor Green "XAML dependencies successfully installed."
-            }
-            else {
-                Write-Host -ForegroundColor Green "XAML is already installed. Skipping ..."
-            }
-            if ($hasAppInstaller.Version -lt "1.16.12653.0") {
-                Write-Host -ForegroundColor Yellow "Installing WinGet ..."
-    	        $releases_url = "https://api.github.com/repos/microsoft/winget-cli/releases/latest"
-    		    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls13
-    		    $releases = Invoke-RestMethod -Uri "$($releases_url)"
-    		    $latestRelease = $releases.assets | Where-Object { $_.browser_download_url.EndsWith("msixbundle") } | Select-Object -First 1
-    		    Add-AppxPackage -Path $latestRelease.browser_download_url
-                Write-Host -ForegroundColor Green "WinGet successfully installed."
-            }
+        if ($hasVCLibs.Version -lt "14.0.30035.0") {
+            Write-Host -ForegroundColor Yellow "Installing VCLibs dependencies ..."
+            Add-AppxPackage -Path "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx"
+            Write-Host -ForegroundColor Green "VCLibs dependencies successfully installed."
+        }
+        else {
+            Write-Host -ForegroundColor Green "VCLibs is already installed. Skipping ..."
+        }
+        if ($hasXAML.Version -lt "7.2203.17001.0") {
+            Write-Host -ForegroundColor Yellow "Installing XAML dependencies ..."
+            Add-AppxPackage -Path "https://github.com/shauryaanand/pc-refreshed/raw/main/Microsoft.UI.Xaml.2.7_7.2203.17001.0_x64__8wekyb3d8bbwe.Appx"
+            Write-Host -ForegroundColor Green "XAML dependencies successfully installed."
+        }
+        else {
+            Write-Host -ForegroundColor Green "XAML is already installed. Skipping ..."
+        }
+        if ($hasAppInstaller.Version -lt "1.16.12653.0") {
+            Write-Host -ForegroundColor Yellow "Installing WinGet ..."
+            $releases_url = "https://api.github.com/repos/microsoft/winget-cli/releases/latest"
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls13
+            $releases = Invoke-RestMethod -Uri "$($releases_url)"
+            $latestRelease = $releases.assets | Where-Object { $_.browser_download_url.EndsWith("msixbundle") } | Select-Object -First 1
+            Add-AppxPackage -Path $latestRelease.browser_download_url
+            Write-Host -ForegroundColor Green "WinGet successfully installed."
+        }
     }
     else {
         Write-Host -ForegroundColor Green "WinGet is already installed. Skipping ..."
-        }
+    }
 }
 
 ### Install Apps Interactively ###
@@ -307,7 +307,6 @@ function install_silent_apps {
 
 ### Install Custom Apps ###
 function install_custom_apps {
-
     Write-Host ""
     Write-Host -ForegroundColor Cyan "Installing Custom Apps ..."
 
@@ -334,6 +333,11 @@ function install_custom_apps {
     Write-Host -ForegroundColor Yellow  "Install: WSL (Ubuntu)"
     wsl --install -d Ubuntu --no-launch
 
+    # Clean up
+    Remove-Item .\install-pyenv-win.ps1
+    Remove-Item .\dbgate-latest.exe
+    Remove-Item .\dotnet-install.ps1
+
     # WSA
     Write-Host -ForegroundColor Yellow  "Install: WSA"
 
@@ -345,19 +349,23 @@ function install_custom_apps {
     Set-PSRepository -Name 'PSGallery' -SourceLocation "https://www.powershellgallery.com/api/v2" -InstallationPolicy Trusted
     Install-Module -Name PS7Zip -Force
 
-    Expand-7Zip -FullName .\wsa.7z -DestinationPath .\wsa
+    [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
 
-    cd wsa
-    cd */
-    & .\Install.ps1
-    cd ../../
+    $foldername = New-Object System.Windows.Forms.FolderBrowserDialog
+    $foldername.Description = "Select a folder to install Windows Subsytem for Android"
+    $foldername.rootfolder = "MyComputer"
+    $foldername.SelectedPath = $initialDirectory
 
-    # Clean up
-    Remove-Item .\install-pyenv-win.ps1
-    Remove-Item .\dbgate-latest.exe
-    Remove-Item .\dotnet-install.ps1
-    Remove-Item .\wsa.7z
-    Remove-Item .\wsa -Recurse -Force
+    if ($foldername.ShowDialog() -eq "OK") {
+        $folder += $foldername.SelectedPath
+    }
+    
+    if ($folder) {
+        Expand-7Zip -FullName .\wsa.7z -DestinationPath $folder
+        Set-Location $folder
+        Set-Location */
+        & .\Install.ps1
+    }
 }
 
 ### Debloating ###
@@ -370,7 +378,8 @@ function debloat_apps {
         if ($null -ne $package) {
             Write-Host -ForegroundColor Red "Remove: $bloatware_app"
             $package | Remove-AppxPackage
-        } else {
+        }
+        else {
             Write-Host "$blt not found. Skipping ..."
         }
     }
@@ -384,9 +393,9 @@ function finish {
     Pause
 }
 
+### Does the current user have admin rights? ###
 function check_rights {
-    If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
-    {
+    If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         Write-Warning "The script needs to be executed with administrator privileges."
         $newProcess = New-Object System.Diagnostics.ProcessStartInfo "PowerShell";
         $newProcess.Arguments = "& '" + $script:MyInvocation.MyCommand.Path + "'"
@@ -398,7 +407,7 @@ function check_rights {
     }
 }
 
-### Question what to do ###
+### Menu for the user ###
 function menu {
     $ProgressPreference = 'SilentlyContinue'
     Set-ExecutionPolicy Unrestricted -Scope CurrentUser -Force
@@ -422,7 +431,7 @@ function menu {
  
     $actions = "0"
     while ($actions -notin "0..6") {
-    $actions = Read-Host -Prompt 'What you want to do?'
+        $actions = Read-Host -Prompt 'What you want to do?'
         if ($actions -in 0..6) {
             if ($actions -eq 0) {
                 exit
