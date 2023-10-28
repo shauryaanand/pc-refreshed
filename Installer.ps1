@@ -16,6 +16,7 @@ $winget_interactive_apps = @(
 $winget_silent_apps = @(
     "7zip.7zip"
     "Git.Git"
+    "Cryptomator.Cryptomator"
     "Foxit.FoxitReader"
     "Bitwarden.Bitwarden"
     "Microsoft.WindowsTerminal"
