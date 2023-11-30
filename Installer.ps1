@@ -54,6 +54,7 @@ $winget_silent_apps = @(
     "Ultimaker.Cura"
     "Telerik.Fiddler.Classic"
     "Cisco.CiscoWebexMeetings"
+    "Safing.Portmaster"
     "Zoom.Zoom"
     "Microsoft.VCRedist.2005.x86"
     "Microsoft.VCRedist.2005.x64"
